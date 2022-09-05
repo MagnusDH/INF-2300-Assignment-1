@@ -40,6 +40,18 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
         this method. But it all starts here!
         """
         self.wfile.write(b"HTTP/1.1 200")
+        parse()
+
+    
+def parse(self):
+    print("\nParse!!!!!!!!!\n")
+
+
+def GET():
+    print("GET fuction\n")
+
+def POST():
+    print("POST function\n")
 
 
 if __name__ == "__main__":
