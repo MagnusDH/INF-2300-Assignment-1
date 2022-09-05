@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import socketserver
+from urllib import request
 
 
 """
@@ -10,7 +11,9 @@ UiT - The Arctic University of Norway
 May 9th, 2019
 """
 
-class MyTCPHandler(socketserver.StreamRequestHandler):
+
+
+class MyTCPHandler(socketserver.StreamRequestHandler):    
     """
     This class is responsible for handling a request. The whole class is
     handed over as a parameter to the server instance so that it is capable
@@ -39,19 +42,80 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
         make additional methods to organize the flow with which a request is handled by
         this method. But it all starts here!
         """
-        self.wfile.write(b"HTTP/1.1 200")
-        parse()
 
+        #Read the request
+        request_line = self.rfile.readline()
+        print("Reading request:", request_line)
+        
+        #Parse the request
+        print("Parsing request...")
+        request_parts = self.parse_request(request_line)
+        
+        #Handle the request
+        print("Handling request...")
+        if(request_parts[0]) == "GET":
+            request_content = self.GET(request_parts[1])
+
+        # if(request_parts[0]) == "POST":
+        #     POST()
+        else:
+            print("ERROR: Could not parse request line")
+        
+
+
+    """
+    Parses a request line.
+    The words in the line is returned as a list.
+    list[0] = request method
+    list[0] = content to fetch
+    list[0] = HTTP version
+    list[0] = \r
+    list[0] = \n
+    """
+    def parse_request(self, request_line):
     
-def parse(self):
-    print("\nParse!!!!!!!!!\n")
+        request_words = request_line.decode("utf-8").split()
+        return request_words
+
+    """
+    GET-function
+    Content = what to fetch
+    """
+    def GET(self, content):
+        print("\nGET function...\n")
 
 
-def GET():
-    print("GET fuction\n")
+        #If content is empty, return index.html
+        if(content == "/"):
+            #Write content header
+            # self.wfile.write
+
+            #Write content length
+            self.wfile.write(b"Content length: ", len(content))
+            
+            # return bytes(index.html)
+
+            self.wfile.write(b"HTTP/1.1 200")
+            #Return index.html in bytes use: bytes() function
+
+        # To do:
+            # Find out what to get (a text.txt file maybe)
+            # Return tekst.txt file
+            # Respond with status code (200 OK, NOt OK etc ...)
+            
+
+        # A GET request to a resource that does not exist should return a 404 - Not Found status with an optional HTML body.
+        # A GET request to a forbidden resource such as server.py should return a 403 - Forbidden status with an optional HTML body.
+        # Any successful GET request should return a 200 - Ok response code and the requested resource.
+        # Any request or response with a non-empty body MUST contain the 'Content-Length' header. This field is simply the exact size of the body in bytes.
+
 
 def POST():
-    print("POST function\n")
+    print("\nPOST function...\n")
+
+    # A POST request to /test.txt should create the resource if it does not exist. The content of the request body should be appended to the file, and its complete contents should be returned in the response body.
+    # A POST request to any other file should return a 403 - Forbidden with an optional HTML body.
+    # Any request or response with a non-empty body MUST contain the 'Content-Length' header. This field is simply the exact size of the body in bytes.
 
 
 if __name__ == "__main__":
