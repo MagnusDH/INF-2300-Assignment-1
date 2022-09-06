@@ -84,19 +84,35 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
     def GET(self, content):
         print("\nGET function...\n")
 
-
         #If content is empty, return index.html
         if(content == "/"):
-            #Write content header
-            # self.wfile.write
+            try:
+                file = open("index.html", "rb")
+                body = file.read()
 
-            #Write content length
-            self.wfile.write(b"Content length: ", len(content))
-            
-            # return bytes(index.html)
+                #Write status line
+                self.wfile.write(b"HTTP/1.1 200 OK\r\n")
 
-            self.wfile.write(b"HTTP/1.1 200")
-            #Return index.html in bytes use: bytes() function
+                #Write header lines
+                self.wfile.write(b"Content-Length: ", len(body), "\r\n")
+                # self.wfile.write(b"Content-Type: ", "html\r\n")
+                #Content type
+                #Connection: closed
+
+                #Write empty spaces
+                self.wfile.write(b"\r\n")
+
+                #Write entity body
+                self.wfile.write(bytes(body))
+                
+                #Close file
+                file.close()
+
+            #File does not exist, write HTTP error message
+            except:
+                self.wfile.write(b"HTTP/1.1 404 - Not Found")
+
+
 
         # To do:
             # Find out what to get (a text.txt file maybe)
