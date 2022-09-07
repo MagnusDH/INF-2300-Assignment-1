@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import socketserver
 from urllib import request
+import os
 
 
 """
@@ -77,15 +78,24 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
         request_words = request_line.decode("utf-8").split()
         return request_words
 
+
+    """
+    Returns TRUE if the file exists
+    Return FALSE if the file does NOT exist
+    """
+    def DoesFileExist(self, FilePathName):
+        return os.path.exists(FilePathName)
+
+
     """
     GET-function
     Content = what to fetch
     """
-    def GET(self, content):
+    def GET(self, file_name):
         print("\n   GET function...\n")
 
         #If content is empty, return index.html
-        if(content == "/"):
+        if(file_name == "/"):
             try:
                 file = open("index.html", "rb")
                 body = file.read()
@@ -93,29 +103,27 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
                 #Write status line
                 self.wfile.write(b"HTTP/1.1 200 OK\r\n")
 
+
+                #Write connection header
+                self.wfile.write(b"Connection: ")
+                self.wfile.write(b"close\r\n")
+               
                 #Write Content-Length
                 self.wfile.write(b"Content-Length: ")
-                # # self.wfile.write(b(str(len(body)))) #This line fucks everything up
-                print(len(body))
-                # self.wfile.write(b"3711")
+                # length = str(len(body)) 
+                # self.wfile.write(bytes(length))          #This line fucks everything up. The tests expects an int, and if bytes are returned an error message appears....
                 self.wfile.write(b"\r\n")
 
 
                 # #Write Content-Type
                 # self.wfile.write(b"Content-Type: ")
-
+                # self.wfile.write(b"text/html")
                 # self.wfile.write(b"\r\n")
 
-                
-                
-                
-                # #Content type
-                # #Connection: closed
-
-                # #Write blank line before entity body
+                #Write blank line before entity body
                 self.wfile.write(b"\r\n")
 
-                # #Write entity body
+                #Write entity body
                 self.wfile.write(bytes(body))
                 
                 #Close file
@@ -124,14 +132,41 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
             #File does not exist, write HTTP error message
             except:
                 self.wfile.write(b"HTTP/1.1 404 - Not Found")
+        
+        #If file is other than "/", and it exists
+        elif(self.DoesFileExist(file_name)):
+            try:
+                file = open(file_name, "rb")
+                body = file.read()
 
+                #Write status line
+                self.wfile.write(b"HTTP/1.1 200 OK\r\n")
 
+                #Write Content-Length
+                self.wfile.write(b"Content-Length: ")
+                # self.wfile.write(b(str(len(body)))) #This line fucks everything up
+                self.wfile.write(b"\r\n")
 
-        # To do:
-            # Find out what to get (a text.txt file maybe)
-            # Return tekst.txt file
-            # Respond with status code (200 OK, NOt OK etc ...)
+                # #Write Content-Type
+                # self.wfile.write(b"Content-Type: ")
+
+                # self.wfile.write(b"\r\n")             
+
+                # #Content type
+
+                #Write blank line before entity body
+                self.wfile.write(b"\r\n")
+
+                # #Write entity body
+                self.wfile.write(bytes(body))
+
+                #Close file
+                file.close()
             
+            #Failed to open file
+            except:  
+                self.wfile.write(b"HTTP/1.1 404 - Not Found")
+
 
         # A GET request to a resource that does not exist should return a 404 - Not Found status with an optional HTML body.
         # A GET request to a forbidden resource such as server.py should return a 403 - Forbidden status with an optional HTML body.
@@ -139,12 +174,30 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
         # Any request or response with a non-empty body MUST contain the 'Content-Length' header. This field is simply the exact size of the body in bytes.
 
 
-def POST():
-    print("\nPOST function...\n")
+    """
+    Creates a new file with the given "file_name".
+    Appends the "content" to the new file
+    """
+    def POST(self, file_name, content):
+        print("\nPOST function...\n")
 
-    # A POST request to /test.txt should create the resource if it does not exist. The content of the request body should be appended to the file, and its complete contents should be returned in the response body.
-    # A POST request to any other file should return a 403 - Forbidden with an optional HTML body.
-    # Any request or response with a non-empty body MUST contain the 'Content-Length' header. This field is simply the exact size of the body in bytes.
+        #If file already exists
+        if(self.DoesFileExist(file_name)):
+            pass
+            #Return error
+            # self.wfile.write("Error")
+
+        #If file does not exist, create a new one
+        else:
+            new_file = open(file_name, "a")
+        
+            #Write content to new file
+            new_file.write(content)
+
+        # A POST request to /test.txt should create the resource if it does not exist. The content of the request body should be appended to the file, and its complete contents should be returned in the response body.
+        # A POST request to any other file should return a 403 - Forbidden with an optional HTML body.
+        # Any request or response with a non-empty body MUST contain the 'Content-Length' header. This field is simply the exact size of the body in bytes.
+
 
 
 if __name__ == "__main__":
