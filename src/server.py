@@ -45,14 +45,14 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
 
         #Read the request
         request_line = self.rfile.readline()
-        print("Reading request:", request_line)
+        print(" Reading request:", request_line)
         
         #Parse the request
-        print("Parsing request...")
+        print(" Parsing request...")
         request_parts = self.parse_request(request_line)
         
         #Handle the request
-        print("Handling request...")
+        print(" Handling request...")
         if(request_parts[0]) == "GET":
             request_content = self.GET(request_parts[1])
 
@@ -67,10 +67,10 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
     Parses a request line.
     The words in the line is returned as a list.
     list[0] = request method
-    list[0] = content to fetch
-    list[0] = HTTP version
-    list[0] = \r
-    list[0] = \n
+    list[1] = content to fetch
+    list[2] = HTTP version
+    list[3] = \r
+    list[4] = \n
     """
     def parse_request(self, request_line):
     
@@ -82,7 +82,7 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
     Content = what to fetch
     """
     def GET(self, content):
-        print("\nGET function...\n")
+        print("\n   GET function...\n")
 
         #If content is empty, return index.html
         if(content == "/"):
@@ -93,16 +93,29 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
                 #Write status line
                 self.wfile.write(b"HTTP/1.1 200 OK\r\n")
 
-                #Write header lines
-                self.wfile.write(b"Content-Length: ", len(body), "\r\n")
-                # self.wfile.write(b"Content-Type: ", "html\r\n")
-                #Content type
-                #Connection: closed
-
-                #Write empty spaces
+                #Write Content-Length
+                self.wfile.write(b"Content-Length: ")
+                # # self.wfile.write(b(str(len(body)))) #This line fucks everything up
+                print(len(body))
+                # self.wfile.write(b"3711")
                 self.wfile.write(b"\r\n")
 
-                #Write entity body
+
+                # #Write Content-Type
+                # self.wfile.write(b"Content-Type: ")
+
+                # self.wfile.write(b"\r\n")
+
+                
+                
+                
+                # #Content type
+                # #Connection: closed
+
+                # #Write blank line before entity body
+                self.wfile.write(b"\r\n")
+
+                # #Write entity body
                 self.wfile.write(bytes(body))
                 
                 #Close file
