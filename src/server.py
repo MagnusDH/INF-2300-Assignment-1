@@ -49,17 +49,25 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
         
         #Parse the request
         request_parts = self.parse_request(request_line)
-        
-        #Handle the request
-        if(request_parts[0]) == "GET":
-            request_content = self.GET(request_parts[1])
 
-        elif(request_parts[0]) == "POST":
-            self.POST()
+        #Check for directory traversal attack
+        TraversalAttackString = "../"
+        if(TraversalAttackString in request_parts[1]):
+            self.wfile.write(b"HTTP/1.1 403 - Forbidden")
 
+        #Request is not a directory traversal attack
         else:
-            print("ERROR: Could not parse request line")
-        
+            #Handle the request
+            if(request_parts[0]) == "GET":
+                request_content = self.GET(request_parts[1])
+
+            elif(request_parts[0]) == "POST":
+                self.POST(request_parts[1])
+
+
+            #Request method is not recognized
+            else:
+                print("ERROR: Could not parse request line")
 
 
     """
@@ -157,16 +165,10 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
             else:       #This line can be written better. NOT just checking for server.py....
                 self.wfile.write(b"HTTP/1.1 403 - Forbidden")
 
-
-            
-        
         #File does NOT exist
         elif(self.DoesFileExist(file_name) == False):
             self.wfile.write(b"HTTP/1.1 404 - Not Found")
         
-
-
-
         # A GET request to a resource that does not exist should return a 404 - Not Found status with an optional HTML body.
         # A GET request to a forbidden resource such as server.py should return a 403 - Forbidden status with an optional HTML body.
         # Any successful GET request should return a 200 - Ok response code and the requested resource.
@@ -177,21 +179,19 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
     Creates a new file with the given "file_name".
     Appends the "content" to the new file
     """
-    def POST(self, file_name, content):
-        print("\nPOST function...\n")
-
+    def POST(self, file_name):
         #If file already exists
-        if(self.DoesFileExist(file_name)):
-            pass
-            #Return error
-            # self.wfile.write("Error")
-
-        #If file does not exist, create a new one
-        else:
-            new_file = open(file_name, "a")
+        if(self.DoesFileExist(file_name) == True):
+            self.wfile.write(b"HTTP/1.1 406 - Not Acceptable")
         
+        #File does not exist, create new one
+        elif(self.DoesFileExist(file_name) == False):
+            new_file = open(file_name, "a")
             #Write content to new file
-            new_file.write(content)
+            new_file.close()
+            self.wfile.write(b"HTTP/1.1 201 - Created")
+
+
 
         # A POST request to /test.txt should create the resource if it does not exist. The content of the request body should be appended to the file, and its complete contents should be returned in the response body.
         # A POST request to any other file should return a 403 - Forbidden with an optional HTML body.
