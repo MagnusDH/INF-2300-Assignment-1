@@ -46,19 +46,17 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
 
         #Read the request
         request_line = self.rfile.readline()
-        # print(" Reading request:", request_line)
         
         #Parse the request
-        # print(" Parsing request...")
         request_parts = self.parse_request(request_line)
         
         #Handle the request
-        # print(" Handling request...")
         if(request_parts[0]) == "GET":
             request_content = self.GET(request_parts[1])
 
-        # if(request_parts[0]) == "POST":
-        #     POST()
+        elif(request_parts[0]) == "POST":
+            self.POST()
+
         else:
             print("ERROR: Could not parse request line")
         
@@ -86,85 +84,86 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
     def DoesFileExist(self, FilePathName):
         return os.path.exists(FilePathName)
 
+    """
+    status_code = int
+    content_length = string
+    content_type = string
+    body = opened and read file
+    """
+    def WriteHeader(self, status_code, content_length, content_type, body):
+        #Write status line
+        if(status_code == 200):
+            self.wfile.write(b"HTTP/1.1 200 - OK\r\n")
+        if(status_code == 404):
+            self.wfile.write(b"HTTP/1.1 404 - Not Found")
+        if(status_code == 403):
+            self.wfile.write(b"HTTP/1.1 403 - Forbidden")
+        
+        # else:
+            # print("STATUS CODE NOT ACCEPTED in WriteHeader function")
+
+        #Write Content-Length
+        string = "Content-Length: " + content_length
+        self.wfile.write(b"Content-Length: ")
+        self.wfile.write(b"\r\n")
+        self.wfile.write(bytes(string, encoding="utf-8"))
+        self.wfile.write(b"\r\n")
+
+        #Write Content-type
+        self.wfile.write(b"Content-Type: text/html\r\n")
+
+
+        #Write blank line before entity body
+        self.wfile.write(b"\r\n")
+
+        #Write entity body
+        self.wfile.write(bytes(body))
+
 
     """
     GET-function
-    Content = what to fetch
+    file_name = which file is requested
     """
-    def GET(self, file_name):
-        #If content is empty, return index.html
-        if(file_name == "/"):
-            try:
-                file = open("index.html", "rb")
-                body = file.read()
-                size = len(body)
-                size = str(size)
-                string = "Content-Length: " + size
+    def GET(self, file_name):     
+        #If requested file exists
+        if(self.DoesFileExist(file_name) == True):
 
-                #Write status line
-                self.wfile.write(b"HTTP/1.1 200 - OK\r\n")
+            #If user is allowed to access given file
+            if(file_name != "server.py"): 
+                #If content is empty, return index.html
+                if(file_name == "/"):
+                    #Open and read file
+                    file = open("index.html", "rb")
+                    body = file.read()
 
-                #Write content-length
-                self.wfile.write(b"Content-Length: ")
-                self.wfile.write(b"\r\n")
-                self.wfile.write(bytes(string, encoding="utf-8"))
-                self.wfile.write(b"\r\n")
+                    #Write header
+                    self.WriteHeader(200, str(len(body)), "text/html", body)
 
-                #Write Content-type
-                self.wfile.write(b"Content-Type: text/html\r\n")
-
-                #Write blank line before entity body
-                self.wfile.write(b"\r\n")
-
-                #Write entity body
-                self.wfile.write(bytes(body))
+                    #Close file
+                    file.close()
                 
-                #Close file
-                file.close()
+                else:
+                    #Open and read file
+                    file = open(file_name, "rb")
+                    body = file.read()
 
-            #File does not exist, write HTTP error message
-            except:
-                self.wfile.write(b"HTTP/1.1 404 - Not Found")
-        
-        #If file is other than "/", and it exists
-        elif(self.DoesFileExist(file_name) == True):
-            try:
-                print("FILE DOES EXIST!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-                file = open(file_name, "rb")
-                body = file.read()
+                    #Write header
+                    self.WriteHeader(200, str(len(body)), "text/html", body)        #Which file_type is it????????
 
-                #Write status line
-                self.wfile.write(b"HTTP/1.1 200 OK\r\n")
-
-                #Write Content-Length
-                self.wfile.write(b"Content-Length: ")
-                # self.wfile.write(b(str(len(body)))) #This line fucks everything up
-                self.wfile.write(b"\r\n")
-
-                # #Write Content-Type
-                # self.wfile.write(b"Content-Type: ")
-
-                # self.wfile.write(b"\r\n")             
-
-                # #Content type
-
-                #Write blank line before entity body
-                self.wfile.write(b"\r\n")
-
-                # #Write entity body
-                self.wfile.write(bytes(body))
-
-                #Close file
-                file.close()
+                    #Close file
+                    file.close()
             
-            #Failed to open file
-            except:  
-                self.wfile.write(b"HTTP/1.1 404 - Not Found")
+            #If user is NOT allowed to open file
+            else:       #This line can be written better. NOT just checking for server.py....
+                self.wfile.write(b"HTTP/1.1 403 - Forbidden")
+
+
+            
         
         #File does NOT exist
         elif(self.DoesFileExist(file_name) == False):
-                self.wfile.write(b"HTTP/1.1 404 - Not Found")
-
+            self.wfile.write(b"HTTP/1.1 404 - Not Found")
+        
 
 
 
