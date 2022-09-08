@@ -64,7 +64,6 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
             elif(request_parts[0]) == "POST":
                 self.POST(request_parts[1])
 
-
             #Request method is not recognized
             else:
                 print("ERROR: Could not parse request line")
