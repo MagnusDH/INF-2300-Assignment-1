@@ -46,14 +46,14 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
 
         #Read the request
         request_line = self.rfile.readline()
-        print(" Reading request:", request_line)
+        # print(" Reading request:", request_line)
         
         #Parse the request
-        print(" Parsing request...")
+        # print(" Parsing request...")
         request_parts = self.parse_request(request_line)
         
         #Handle the request
-        print(" Handling request...")
+        # print(" Handling request...")
         if(request_parts[0]) == "GET":
             request_content = self.GET(request_parts[1])
 
@@ -92,33 +92,26 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
     Content = what to fetch
     """
     def GET(self, file_name):
-        print("\n   GET function...\n")
-
         #If content is empty, return index.html
         if(file_name == "/"):
             try:
                 file = open("index.html", "rb")
                 body = file.read()
+                size = len(body)
+                size = str(size)
+                string = "Content-Length: " + size
 
                 #Write status line
-                self.wfile.write(b"HTTP/1.1 200 OK\r\n")
+                self.wfile.write(b"HTTP/1.1 200 - OK\r\n")
 
-
-                #Write connection header
-                self.wfile.write(b"Connection: ")
-                self.wfile.write(b"close\r\n")
-               
-                #Write Content-Length
+                #Write content-length
                 self.wfile.write(b"Content-Length: ")
-                # length = str(len(body)) 
-                # self.wfile.write(bytes(length))          #This line fucks everything up. The tests expects an int, and if bytes are returned an error message appears....
+                self.wfile.write(b"\r\n")
+                self.wfile.write(bytes(string, encoding="utf-8"))
                 self.wfile.write(b"\r\n")
 
-
-                # #Write Content-Type
-                # self.wfile.write(b"Content-Type: ")
-                # self.wfile.write(b"text/html")
-                # self.wfile.write(b"\r\n")
+                #Write Content-type
+                self.wfile.write(b"Content-Type: text/html\r\n")
 
                 #Write blank line before entity body
                 self.wfile.write(b"\r\n")
@@ -134,8 +127,9 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
                 self.wfile.write(b"HTTP/1.1 404 - Not Found")
         
         #If file is other than "/", and it exists
-        elif(self.DoesFileExist(file_name)):
+        elif(self.DoesFileExist(file_name) == True):
             try:
+                print("FILE DOES EXIST!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
                 file = open(file_name, "rb")
                 body = file.read()
 
@@ -166,6 +160,12 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
             #Failed to open file
             except:  
                 self.wfile.write(b"HTTP/1.1 404 - Not Found")
+        
+        #File does NOT exist
+        elif(self.DoesFileExist(file_name) == False):
+                self.wfile.write(b"HTTP/1.1 404 - Not Found")
+
+
 
 
         # A GET request to a resource that does not exist should return a 404 - Not Found status with an optional HTML body.
