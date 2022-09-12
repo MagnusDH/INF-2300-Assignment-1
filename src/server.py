@@ -43,6 +43,7 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
 
         #Read the request
         request_line = self.rfile.readline()
+        print("Request line is:", request_line)
         
         #Parse the request
         request_parts = self.parse_request(request_line)
@@ -101,10 +102,12 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
         #Write status line
         if(status_code == 200):
             self.wfile.write(b"HTTP/1.1 200 - OK\r\n")
+        if(status_code == 201):
+            self.wfile.write(b"HTTP/1.1 201 - Created\r\n")
         if(status_code == 404):
-            self.wfile.write(b"HTTP/1.1 404 - Not Found")
+            self.wfile.write(b"HTTP/1.1 404 - Not Found\r\n")
         if(status_code == 403):
-            self.wfile.write(b"HTTP/1.1 403 - Forbidden")
+            self.wfile.write(b"HTTP/1.1 403 - Forbidden\r\n")
         
         # else:
             # print("STATUS CODE NOT ACCEPTED in WriteHeader function")
@@ -131,10 +134,35 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
     GET-function
     file_name = which file is requested
     """
-    def GET(self, file_name):   
+    def GET(self, file_name):  
+        print("GET FUNCTION!!!!!!!!!!!!...") 
         if(file_name == "/messages"):
-            print("IT WORKED!!!!!!!")
-            self.WriteHeader(200, str(len(body)), "text/html", body)
+            file = open("messages.json", "r")
+            print("Opened json file...")
+            content = file.read()
+            print("Read json content...")
+
+            # write status line
+            self.wfile.write(b"HTTP/1.1 200 - OK\r\n")
+
+            #Write Content-Length
+            content_length_string = "Content-Length: " + content_length
+            self.wfile.write(b"Content-Length: ")
+            self.wfile.write(b"\r\n")
+            self.wfile.write(bytes(string, encoding="utf-8"))
+            self.wfile.write(b"\r\n")
+
+            #Write Content-type
+            self.wfile.write(b"Content-Type: json\r\n")
+            print("ok")
+
+            #Write blank line before entity body
+            self.wfile.write(b"\r\n")
+
+            #Write entity body
+            self.wfile.write(bytes(content))
+
+            return 1
 
         #If requested file exists
         if(self.DoesFileExist(file_name) == True):
@@ -193,8 +221,6 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
             #Write content to new file
             new_file.close()
             self.wfile.write(b"HTTP/1.1 201 - Created")
-
-
 
         # A POST request to /test.txt should create the resource if it does not exist. The content of the request body should be appended to the file, and its complete contents should be returned in the response body.
         # A POST request to any other file should return a 403 - Forbidden with an optional HTML body.

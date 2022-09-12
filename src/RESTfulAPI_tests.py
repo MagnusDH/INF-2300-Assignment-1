@@ -19,21 +19,40 @@ server_thread.start()
 client = HTTPConnection(HOST, PORT)
 
 
-def test1():
+def test_GET_messages():
     #Write request message to server.py    
-    client.request("GET", "/")
+    client.request("GET", "/messages")
+    
+
     try:
         response = client.getresponse()
-        # response.read()
         return response.status in [status.value for status in HTTPStatus]
     except BadStatusLine:
         client.close()
         return False
 
+def test_POST_new_message():
+    testfile = "tekst.txt"
+    msg = b"Denne teksten skal inn i tekst.txt"
+    
+    headers = {
+        "Content-Type:": "txt",
+        "Content-Length:": bytes(len(msg))
+    }
 
+    if(os.path.exists(testfile)):
+        print("File already exists on server...")
+        return False
+    else:
+        client.request("POST", testfile, body=msg, headers=headers)
+        client.getresponse()
+        client.close()
+        return True
 
+    
 test_functions = [
-    test1,
+    test_GET_messages,
+    # test_POST_new_message,
 ]
 
 
