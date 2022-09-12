@@ -94,7 +94,7 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
 
     """
     status_code = int
-    content_length = string
+    content_length = int
     content_type = string
     body = opened and read file
     """
@@ -113,15 +113,14 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
             # print("STATUS CODE NOT ACCEPTED in WriteHeader function")
 
         #Write Content-Length
-        string = "Content-Length: " + content_length
-        self.wfile.write(b"Content-Length: ")
-        self.wfile.write(b"\r\n")
+        string = "Content-Length: " + str(content_length)
+        self.wfile.write(b"Content-Length: \r\n")
         self.wfile.write(bytes(string, encoding="utf-8"))
         self.wfile.write(b"\r\n")
 
         #Write Content-type
         self.wfile.write(b"Content-Type: text/html\r\n")
-
+        # self.wfile.write(b"Content-Type: " + content_type + b"\r\n")
 
         #Write blank line before entity body
         self.wfile.write(b"\r\n")
@@ -135,37 +134,20 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
     file_name = which file is requested
     """
     def GET(self, file_name):  
-        print("GET FUNCTION!!!!!!!!!!!!...") 
         if(file_name == "/messages"):
-            file = open("messages.json", "r")
-            print("Opened json file...")
+            file = open("messages.json", "rb")
             content = file.read()
-            print("Read json content...")
+            print("Content of messages.json:", content)
+            content_length = len(content)
+            print("Length of messages.json:", content_length)
 
-            # write status line
-            self.wfile.write(b"HTTP/1.1 200 - OK\r\n")
-
-            #Write Content-Length
-            content_length_string = "Content-Length: " + content_length
-            self.wfile.write(b"Content-Length: ")
-            self.wfile.write(b"\r\n")
-            self.wfile.write(bytes(string, encoding="utf-8"))
-            self.wfile.write(b"\r\n")
-
-            #Write Content-type
-            self.wfile.write(b"Content-Type: json\r\n")
-            print("ok")
-
-            #Write blank line before entity body
-            self.wfile.write(b"\r\n")
-
-            #Write entity body
-            self.wfile.write(bytes(content))
+            #Write status line, headers and body
+            self.WriteHeader(200, content_length, "text.txt", content)
 
             return 1
 
         #If requested file exists
-        if(self.DoesFileExist(file_name) == True):
+        elif(self.DoesFileExist(file_name) == True):
 
             #If user is allowed to access given file
             if(file_name != "server.py"): 
@@ -176,7 +158,8 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
                     body = file.read()
 
                     #Write header
-                    self.WriteHeader(200, str(len(body)), "text/html", body)
+                    self.WriteHeader(200, len(body), "text/html", body)
+
 
                     #Close file
                     file.close()

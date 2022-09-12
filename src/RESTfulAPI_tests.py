@@ -22,61 +22,42 @@ client = HTTPConnection(HOST, PORT)
 def test_GET_messages():
     #Write request message to server.py    
     client.request("GET", "/messages")
+
+    expected_answer = "b'test string'"
     
+    answer = client.getresponse().read()
 
-    try:
-        response = client.getresponse()
-        return response.status in [status.value for status in HTTPStatus]
-    except BadStatusLine:
-        client.close()
-        return False
-
-def test_POST_new_message():
-    testfile = "tekst.txt"
-    msg = b"Denne teksten skal inn i tekst.txt"
-    
-    headers = {
-        "Content-Type:": "txt",
-        "Content-Length:": bytes(len(msg))
-    }
-
-    if(os.path.exists(testfile)):
-        print("File already exists on server...")
-        return False
-    else:
-        client.request("POST", testfile, body=msg, headers=headers)
-        client.getresponse()
+    if(expected_answer == str(answer)):
         client.close()
         return True
-
+    else:
+        client.close()
+        return False
+    
     
 test_functions = [
     test_GET_messages,
-    # test_POST_new_message,
 ]
 
 
 def run_tests(all_tests, random=False):
     print("Running tests in sequential order...\n")
     passed = 0
+    failed = 0
     num_tests = len(all_tests)
-    skip_rest = False
+
+    #Run all tests
     for test_function in all_tests:
-        if not skip_rest:
-            result = test_function()
-            if result:
-                passed += 1
-            else:
-                skip_rest = True
-            print(("FAIL", "PASS")[result] + "\t" + test_function.__doc__)
+        result = test_function()
+        
+        if(result == True):
+            passed += 1
         else:
-            print("SKIP\t" + test_function.__doc__)
+            failed += 1
+    
     percent = round((passed / num_tests) * 100, 2)
-    print(f"\n{passed} of {num_tests}({percent}%) tests PASSED.\n")
-    if passed == num_tests:
-        return True
-    else:
-        return False
+    
+    print("PASSED", passed, "/", num_tests, "TESTS", "(", percent, "%)")
 
 
 run_tests(test_functions)
