@@ -137,9 +137,9 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
         if(file_name == "/messages"):
             file = open("messages.json", "rb")
             content = file.read()
-            print("Content of messages.json:", content)
+            # print("Content of messages.json:", content)
             content_length = len(content)
-            print("Length of messages.json:", content_length)
+            # print("Length of messages.json:", content_length)
 
             #Write status line, headers and body
             self.WriteHeader(200, content_length, "text.txt", content)

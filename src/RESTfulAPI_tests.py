@@ -1,3 +1,4 @@
+from multiprocessing.connection import answer_challenge
 import socketserver
 import threading
 from server import MyTCPHandler as HTTPHandler
@@ -25,9 +26,13 @@ def test_GET_messages():
 
     expected_answer = "b'test string'"
     
-    answer = client.getresponse().read()
+    response = client.getresponse().read()
 
-    if(expected_answer == str(answer)):
+    answer2 = str(response).split("\n")
+
+    print("\nResponse is:", answer2)
+
+    if(expected_answer == str(response)):
         client.close()
         return True
     else:
