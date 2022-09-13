@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+from multiprocessing.sharedctypes import Value
+import re
 import socketserver
 from urllib import request
 import os
@@ -42,8 +44,81 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
         """
 
         #Read the request
-        request_line = self.rfile.readline()
-        print("Request line is:", request_line)
+        # request_line = self.rfile.readline()
+
+        #Dictionary containing all parts of sent-request
+        request_dict = {}
+
+        while(True):
+            #Read the current line (this will iterate through all lines in request)
+            byte_line = self.rfile.readline()
+            
+            #Decode from byte to string
+            string_line = byte_line.decode()
+            print("STRING LINE::::::::", string_line)
+
+            #Make string to lowercase
+            string_line = string_line.lower()
+
+            #Place status-line, headers and body in dictionary
+            if(string_line.startswith("get")):
+                print("FOUND METHOD!!!!!!!!!!!!!!!!!!!!")
+                print(string_line)
+                request_dict = {"method": "get"}
+
+
+
+
+            if(string_line.startswith("content-length:")):
+                value = string_line[15:]
+                value = int(value)
+                request_dict = {"content-length": value}
+
+            if(string_line.startswith("content-type:")):
+                content_type = string_line[14:]
+                request_dict = {"content-type": content_type}
+
+
+                # hente ut Value
+            if(byte_line == b"\r\n"):
+                # body = self.rfile.read(content_length)
+                break
+                
+        
+        print("OOOOOOOOOOOOOOOOOOOOOOOKKKKKKKKKKKKKKKKKK")
+
+        # i = 0
+        # body = 0
+        # for line in self.rfile:
+        #     obj = line.decode() # Decodes from byte to string 
+        #     if obj.startswith("Content-Length"):
+        #         content_len = line.split(":",1)
+        #         print(content_len)
+        #     if(line == b"\r\n"):
+        #         body = self.rfile.read(int(content_len)).decode()
+        #         print(body)
+        #         break
+        
+        # print("\n\n")
+        
+
+
+
+        # request = self.request.recv(2048)
+        # # print("MAIN REQUEST:\n", request)
+        # request = request.split()
+
+        # request_parts = []
+
+        # for line in request:
+        #     line = str(line)
+        #     print(line)
+        #     line = line[2:]
+        #     line = line.rstrip(line[-1])    #Remove last character from line
+        #     request_parts.append(line)
+
+        # print(request_parts, "\n")
+        # print("Request line is:", request_line)
         
         #Parse the request
         request_parts = self.parse_request(request_line)
@@ -109,18 +184,16 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
         if(status_code == 403):
             self.wfile.write(b"HTTP/1.1 403 - Forbidden\r\n")
         
-        # else:
-            # print("STATUS CODE NOT ACCEPTED in WriteHeader function")
-
         #Write Content-Length
-        string = "Content-Length: " + str(content_length)
-        self.wfile.write(b"Content-Length: \r\n")
-        self.wfile.write(bytes(string, encoding="utf-8"))
+        content = bytes(str(len(body)),encoding="utf-8")
+        self.wfile.write(b"Content-Length: " + content)
         self.wfile.write(b"\r\n")
 
         #Write Content-type
-        self.wfile.write(b"Content-Type: text/html\r\n")
-        # self.wfile.write(b"Content-Type: " + content_type + b"\r\n")
+        self.wfile.write(b"Content-Type: " + content_type + b"\r\n")
+
+        #Close connection
+        self.wfile.write(b"Connection: Close\r\n")
 
         #Write blank line before entity body
         self.wfile.write(b"\r\n")
@@ -134,19 +207,17 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
     file_name = which file is requested
     """
     def GET(self, file_name):  
+        #If "/messages" is requested, return list/json-file
         if(file_name == "/messages"):
             file = open("messages.json", "rb")
-            content = file.read()
-            # print("Content of messages.json:", content)
-            content_length = len(content)
-            # print("Length of messages.json:", content_length)
+            body = file.read()
+            content_length = len(body)
 
             #Write status line, headers and body
-            self.WriteHeader(200, content_length, "text.txt", content)
-
+            self.WriteHeader(200, content_length, b"text.json", body)
             return 1
 
-        #If requested file exists
+        #Else, requested file DOES exists
         elif(self.DoesFileExist(file_name) == True):
 
             #If user is allowed to access given file
@@ -158,11 +229,11 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
                     body = file.read()
 
                     #Write header
-                    self.WriteHeader(200, len(body), "text/html", body)
-
+                    self.WriteHeader(200, len(body), b"text/html", body)
 
                     #Close file
                     file.close()
+                    return 1
                 
                 else:
                     #Open and read file
@@ -174,14 +245,18 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
 
                     #Close file
                     file.close()
+
+                    return 1
             
             #If user is NOT allowed to open file
             else:       #This line can be written better. NOT just checking for server.py....
                 self.wfile.write(b"HTTP/1.1 403 - Forbidden")
+                return 0
 
         #File does NOT exist
         elif(self.DoesFileExist(file_name) == False):
             self.wfile.write(b"HTTP/1.1 404 - Not Found")
+            return 0
         
         # A GET request to a resource that does not exist should return a 404 - Not Found status with an optional HTML body.
         # A GET request to a forbidden resource such as server.py should return a 403 - Forbidden status with an optional HTML body.
