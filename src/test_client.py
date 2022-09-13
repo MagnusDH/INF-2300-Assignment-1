@@ -208,11 +208,11 @@ def run_tests(all_tests, random=False):
                 passed += 1
             else:
                 skip_rest = True
-            # print(("FAIL", "PASS")[result] + "\t" + test_function.__doc__)
+            print(("FAIL", "PASS")[result] + "\t" + test_function.__doc__)
         else:
             print("SKIP\t" + test_function.__doc__)
     percent = round((passed / num_tests) * 100, 2)
-    # print(f"\n{passed} of {num_tests}({percent}%) tests PASSED.\n")
+    print(f"\n{passed} of {num_tests}({percent}%) tests PASSED.\n")
     if passed == num_tests:
         return True
     else:

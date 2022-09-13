@@ -55,37 +55,60 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
             
             #Decode from byte to string
             string_line = byte_line.decode()
-            print("STRING LINE::::::::", string_line)
 
             #Make string to lowercase
             string_line = string_line.lower()
-
+            
             #Place status-line, headers and body in dictionary
+            #Check status-line
             if(string_line.startswith("get")):
-                print("FOUND METHOD!!!!!!!!!!!!!!!!!!!!")
-                print(string_line)
-                request_dict = {"method": "get"}
+                met_code_ver = string_line.split(" ")
+                request_dict["method"] = "get"              #Method
+                request_dict["file-name"] = met_code_ver[1] #FilePathName                
+                request_dict["version"] = met_code_ver[2]   #version
+            
+            #Check status-line
+            if(string_line.startswith("post")):
+                met_code_ver = string_line.split(" ")
+                request_dict["method"] = "post"             #Method
+                request_dict["file-name"] = met_code_ver[1] #FilePathName                
+                request_dict["version"] = met_code_ver[2]   #version
+            
+            #Check status-line
+            if(string_line.startswith("put")):
+                met_code_ver = string_line.split(" ")
+                request_dict["method"] = "put"              #Method
+                request_dict["file-name"] = met_code_ver[1] #FilePathName                
+                request_dict["version"] = met_code_ver[2]   #version
+            
+            #Check status-line
+            if(string_line.startswith("delete")):
+                met_code_ver = string_line.split(" ")
+                request_dict["method"] = "delete"           #Method
+                request_dict["file-name"] = met_code_ver[1] #FilePathName                
+                request_dict["version"] = met_code_ver[2]   #version
 
-
-
-
+            #Check content-length
             if(string_line.startswith("content-length:")):
                 value = string_line[15:]
                 value = int(value)
                 request_dict = {"content-length": value}
 
+            #Check content-type
             if(string_line.startswith("content-type:")):
                 content_type = string_line[14:]
                 request_dict = {"content-type": content_type}
 
 
-                # hente ut Value
+            #Check blank line
             if(byte_line == b"\r\n"):
                 # body = self.rfile.read(content_length)
                 break
+
+            #Check body
                 
+        # print(request_dict)
         
-        print("OOOOOOOOOOOOOOOOOOOOOOOKKKKKKKKKKKKKKKKKK")
 
         # i = 0
         # body = 0
@@ -121,28 +144,48 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
         # print("Request line is:", request_line)
         
         #Parse the request
-        request_parts = self.parse_request(request_line)
+        # request_parts = self.parse_request(request_line)
+
+        #Check for directory traversal attack
+        # TraversalAttackString = "../"
+        # if(TraversalAttackString in request_parts[1]):
+        #     self.wfile.write(b"HTTP/1.1 403 - Forbidden")
+
+        #Request is not a directory traversal attack
+        # else:
+        #     #Handle the request
+        #     if(request_parts[0]) == "GET":
+        #         request_content = self.GET(request_parts[1])
+
+        #     elif(request_parts[0]) == "POST":
+        #         #Fetch body to write to file
+        #         # full_request = self.request.recv(1024)
+        #         # full_request = full_request.decode()
+        #         self.POST(request_parts[1])
+
+        #     #Request method is not recognized
+        #     else:
+        #         print("ERROR: Could not parse request line")
+
 
         #Check for directory traversal attack
         TraversalAttackString = "../"
-        if(TraversalAttackString in request_parts[1]):
+        if(TraversalAttackString in request_dict["file-name"]):
             self.wfile.write(b"HTTP/1.1 403 - Forbidden")
 
-        #Request is not a directory traversal attack
+        #Handle the request
+        if(request_dict["method"]) == "get":
+            request_content = self.GET(request_dict["file-name"])
+
+        # elif(request_dict["method"]) == "post":
+            #Fetch body to write to file
+            # full_request = self.request.recv(1024)
+            # full_request = full_request.decode()
+            # self.POST(request_parts[1])
+
+        #Request method is not recognized
         else:
-            #Handle the request
-            if(request_parts[0]) == "GET":
-                request_content = self.GET(request_parts[1])
-
-            elif(request_parts[0]) == "POST":
-                #Fetch body to write to file
-                # full_request = self.request.recv(1024)
-                # full_request = full_request.decode()
-                self.POST(request_parts[1])
-
-            #Request method is not recognized
-            else:
-                print("ERROR: Could not parse request line")
+            print("ERROR: Could not parse request line")
 
 
     """
