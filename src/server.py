@@ -2,7 +2,7 @@
 from multiprocessing.sharedctypes import Value
 import re
 import socketserver
-from urllib import request
+from urllib import request, response
 import os
 
 """
@@ -55,7 +55,7 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
         elif(request_dict["method"]) == "get":
             request_content = self.GET(request_dict["file-name"])
         elif(request_dict["method"]) == "post":
-            request_content = self.POST(request_dict["file-name"], bytes(request_dict["body"]), request_dict["content-length"], bytes(request_dict["content-type"]))
+            request_content = self.POST(request_dict["file-name"], request_dict["body"].encode("utf-8"), request_dict["content-length"], request_dict["content-type"].encode("utf-8"))
 
 
     def read_request(self):
@@ -124,7 +124,6 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
 
                 #Read body IF "POST" function is called
                 if(request_dict["method"] == "post"):
-                    print("Request_dict:", request_dict)
                     body = self.rfile.read(int(request_dict["content-length"])).decode()
                     request_dict["body"] = body
 
@@ -154,6 +153,8 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
             self.wfile.write(b"HTTP/1.1 403 - Forbidden\r\n")
         if(status_code == 404):
             self.wfile.write(b"HTTP/1.1 404 - Not Found\r\n")
+        if(status_code == 406):
+            self.wfile.write(b"HTTP/1.1 404 - Not Acceptable\r\n")
         
         #Write Content-Length
         content = bytes(str(len(body)),encoding="utf-8")
@@ -169,8 +170,7 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
         self.wfile.write(b"\r\n")
 
         #Write entity body
-        self.wfile.write(bytes(body))
-
+        self.wfile.write(body)
 
     def GET(self, file_name:str):  
         """
@@ -201,7 +201,7 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
                 else:
                     file = open(file_name, "rb")                            #Open file 
                     body = file.read()                                      #Read file
-                    self.WriteHeader(200, str(len(body)), "text/html", body)#Write status line, headers and body
+                    self.WriteHeader(200, len(body), "text/html", body)#Write status line, headers and body
                     file.close()                                            #Close file
                     return 1                                                #Return successful
             
@@ -218,35 +218,33 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
 
     def POST(self, file_name:str, body:bytes, body_length:int, content_type:bytes):
         """
-        Creates a new file with the given "file_name".
+        Creates a new file with the given "file_name", IF another file does not already exist.
 
-        Appends "body" to the new file
+        Writes headers and appends "body" to the new created file
         """
-
-        print("\nPOST FUNCTION!!!!!")
-        print("File_name:", file_name)
-        print("body:", body)
-        print("body_length:", body_length)
-        print("Content_type:", content_type)
 
         #A POST request to any other file should return "403 - forbidden"
         # if(file_name != "/test.txt"):
-            # self.wfile.write(b"HTTP/1.1 403 - Forbidden")
+        #     self.wfile.write(b"HTTP/1.1 403 - Forbidden")
         
         #If file already exists
         if(self.DoesFileExist(file_name) == True):
             print("ERROR: Can not POST new file. File-name already exists...\n")
-            self.wfile.write(b"HTTP/1.1 406 - Not Acceptable")
+            self.WriteHeader(406, 0, b"", b"")
         
         
         #File does not exist, create new one
         elif(self.DoesFileExist(file_name) == False):
-            print("CREATING NEW FILE")
-            new_file = open(file_name, "a")             #Create new file
-            # new_file.write(body)                        #Write body to new file
+            new_file = open(file_name, "ab")            #Create new file
+            new_file.write(body)                        #Write body to new file
             new_file.close()                            #Close file
-            # self.WriteHeader(201, body_length, content_type, body)
-            self.wfile.write(b"HTTP/1.1 201 - Created") #Write response
+
+            #ReOpen file to write correct response body
+            file = open(file_name, "rb")
+            response_body = file.read()
+            # print("RESPONSE BODY:\n", response_body)
+
+            self.WriteHeader(201, len(response_body), content_type, response_body)
 
         # A POST request to /test.txt should create the resource if it does not exist. The content of the request body should be appended to the file, and its complete contents should be returned in the response body.
         # A POST request to any other file should return a 403 - Forbidden with an optional HTML body.

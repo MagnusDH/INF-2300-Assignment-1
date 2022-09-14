@@ -19,8 +19,10 @@ server_thread = threading.Thread(target=server.serve_forever)
 server_thread.start()
 client = HTTPConnection(HOST, PORT)
 
-"""Test for messages.json """
 def test_GET_messages():
+    """
+    Checks if messages.json response is correct
+    """
     #Write request message to server.py    
     client.request("GET", "/messages")
 
@@ -31,19 +33,49 @@ def test_GET_messages():
     #Read the actual response from server
     response = client.getresponse().read()
 
-    print("Response is         :", response)
-    print("Expected response is:", expected_response)
-
+    #Check responses
     if(expected_response == response):
         client.close()
         return True
     else:
         client.close()
         return False
-    
+
+def test_POST_to_messages():
+    """
+    Checks if POST to "/messages" is correct
+    """
+    #Write request message
+    file_name = "magnus.json"
+    content = "Magnus e sykt kul"
+    headers = {
+        "content-type": "text.json",
+        "content-length": len(content)
+    }
+
+    #Remove test file if it exists
+    if(os.path.exists(file_name) == True):
+        os.remove(file_name)
+
+    client.request("POST", file_name, body=content, headers=headers)
+    print("Expected response:", content)
+
+    #Check response
+    response = client.getresponse().read()
+    print("Actual response:", response)
+
+    if(response == content):
+        client.close()
+        return 1
+    else:
+        client.close()
+        return 0
+
+
     
 test_functions = [
-    test_GET_messages,
+    # test_GET_messages,
+    test_POST_to_messages
 ]
 
 

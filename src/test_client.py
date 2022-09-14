@@ -156,8 +156,10 @@ def test_post_to_test_file_should_return_file_content():
         os.remove(testfile)
     client.request("POST", testfile, body=msg, headers=headers)
     response_body = client.getresponse().read()
+    print("RESPONSE_BODY: \n", response_body)
     with open(testfile, "rb") as infile:
         filecontent = infile.read()
+        print("EXPECTED CONTENT: \n", filecontent)
     client.close()
     return response_body == filecontent
 
@@ -191,9 +193,9 @@ test_functions = [
     # test_nonexistent_resource_status_code,
     # test_forbidden_resource_status_code,
     # test_directory_traversal_exploit,
-    test_post_to_non_existing_file_should_create_file,
+    # test_post_to_non_existing_file_should_create_file,
     test_post_to_test_file_should_return_file_content,
-    test_post_to_test_file_should_return_correct_content_length,
+    # test_post_to_test_file_should_return_correct_content_length,
 ]
 
 
