@@ -38,15 +38,33 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
     """
     def handle(self):
         """
-        This method is responsible for handling an http-request. You can, and should(!),
-        make additional methods to organize the flow with which a request is handled by
-        this method. But it all starts here!
+        Handles a HTTP-request.
+
+        A request is parsed then sent to it's respective method to get handled
         """
 
-        #Read the request
-        # request_line = self.rfile.readline()
+        #Read request and place variables in dictionary for further use
+        request_dict = self.read_request()
 
-        #Dictionary containing all parts of sent-request
+        #Check for directory traversal attack
+        TraversalAttackString = "../"
+        if(TraversalAttackString in request_dict["file-name"]):
+            self.WriteHeader(403, 0, b"", b"")
+        
+        #Handle the request
+        elif(request_dict["method"]) == "get":
+            request_content = self.GET(request_dict["file-name"])
+        elif(request_dict["method"]) == "post":
+            request_content = self.POST(request_dict["file-name"], bytes(request_dict["body"]), request_dict["content-length"], bytes(request_dict["content-type"]))
+
+
+    def read_request(self):
+        """
+        Returns a dictionary with the following keys:
+
+        ["method"], ["file-name"], ["version"], ["content-length"], ["content-type"], ["body"]
+        """
+
         request_dict = {}
 
         while(True):
@@ -71,15 +89,16 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
             if(string_line.startswith("post")):
                 met_code_ver = string_line.split(" ")
                 request_dict["method"] = "post"             #Method
-                request_dict["file-name"] = met_code_ver[1] #FilePathName                
+                request_dict["file-name"] = met_code_ver[1] #FilePathName
                 request_dict["version"] = met_code_ver[2]   #version
-            
+
             #Check status-line
             if(string_line.startswith("put")):
                 met_code_ver = string_line.split(" ")
                 request_dict["method"] = "put"              #Method
-                request_dict["file-name"] = met_code_ver[1] #FilePathName                
+                request_dict["file-name"] = met_code_ver[1] #FilePathNamelsee                
                 request_dict["version"] = met_code_ver[2]   #version
+
             
             #Check status-line
             if(string_line.startswith("delete")):
@@ -92,145 +111,53 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
             if(string_line.startswith("content-length:")):
                 value = string_line[15:]
                 value = int(value)
-                request_dict = {"content-length": value}
+                request_dict["content-length"] = value
 
             #Check content-type
-            if(string_line.startswith("content-type:")):
+            if(string_line.startswith("content-type:")):                
                 content_type = string_line[14:]
-                request_dict = {"content-type": content_type}
+                request_dict["content-type"] = content_type
 
 
             #Check blank line
             if(byte_line == b"\r\n"):
-                # body = self.rfile.read(content_length)
+
+                #Read body IF "POST" function is called
+                if(request_dict["method"] == "post"):
+                    print("Request_dict:", request_dict)
+                    body = self.rfile.read(int(request_dict["content-length"])).decode()
+                    request_dict["body"] = body
+
                 break
-
-            #Check body
-                
-        # print(request_dict)
-        
-
-        # i = 0
-        # body = 0
-        # for line in self.rfile:
-        #     obj = line.decode() # Decodes from byte to string 
-        #     if obj.startswith("Content-Length"):
-        #         content_len = line.split(":",1)
-        #         print(content_len)
-        #     if(line == b"\r\n"):
-        #         body = self.rfile.read(int(content_len)).decode()
-        #         print(body)
-        #         break
-        
-        # print("\n\n")
-        
+            
+        return request_dict
 
 
-
-        # request = self.request.recv(2048)
-        # # print("MAIN REQUEST:\n", request)
-        # request = request.split()
-
-        # request_parts = []
-
-        # for line in request:
-        #     line = str(line)
-        #     print(line)
-        #     line = line[2:]
-        #     line = line.rstrip(line[-1])    #Remove last character from line
-        #     request_parts.append(line)
-
-        # print(request_parts, "\n")
-        # print("Request line is:", request_line)
-        
-        #Parse the request
-        # request_parts = self.parse_request(request_line)
-
-        #Check for directory traversal attack
-        # TraversalAttackString = "../"
-        # if(TraversalAttackString in request_parts[1]):
-        #     self.wfile.write(b"HTTP/1.1 403 - Forbidden")
-
-        #Request is not a directory traversal attack
-        # else:
-        #     #Handle the request
-        #     if(request_parts[0]) == "GET":
-        #         request_content = self.GET(request_parts[1])
-
-        #     elif(request_parts[0]) == "POST":
-        #         #Fetch body to write to file
-        #         # full_request = self.request.recv(1024)
-        #         # full_request = full_request.decode()
-        #         self.POST(request_parts[1])
-
-        #     #Request method is not recognized
-        #     else:
-        #         print("ERROR: Could not parse request line")
-
-
-        #Check for directory traversal attack
-        TraversalAttackString = "../"
-        if(TraversalAttackString in request_dict["file-name"]):
-            self.wfile.write(b"HTTP/1.1 403 - Forbidden")
-
-        #Handle the request
-        if(request_dict["method"]) == "get":
-            request_content = self.GET(request_dict["file-name"])
-
-        # elif(request_dict["method"]) == "post":
-            #Fetch body to write to file
-            # full_request = self.request.recv(1024)
-            # full_request = full_request.decode()
-            # self.POST(request_parts[1])
-
-        #Request method is not recognized
-        else:
-            print("ERROR: Could not parse request line")
-
-
-    """
-    Parses a request line.
-    The words in the line is returned as a list.
-    list[0] = request method
-    list[1] = content to fetch
-    list[2] = HTTP version
-    list[3] = \r
-    list[4] = \n
-    """
-    def parse_request(self, request_line):
-    
-        request_words = request_line.decode("utf-8").split()
-        return request_words
-
-
-    """
-    Returns TRUE if the file exists
-    Return FALSE if the file does NOT exist
-    """
     def DoesFileExist(self, FilePathName):
+        """
+        Returns TRUE if the file exists
+           
+        Return FALSE if the file does NOT exist
+        """
         return os.path.exists(FilePathName)
 
-    """
-    status_code = int
-    content_length = int
-    content_type = string
-    body = opened and read file
-    """
-    def WriteHeader(self, status_code, content_length, content_type, body):
+
+    def WriteHeader(self, status_code:int, content_length:int, content_type:bytes, body:bytes):
+        """Writes response header"""
+
         #Write status line
         if(status_code == 200):
             self.wfile.write(b"HTTP/1.1 200 - OK\r\n")
         if(status_code == 201):
             self.wfile.write(b"HTTP/1.1 201 - Created\r\n")
-        if(status_code == 404):
-            self.wfile.write(b"HTTP/1.1 404 - Not Found\r\n")
         if(status_code == 403):
             self.wfile.write(b"HTTP/1.1 403 - Forbidden\r\n")
+        if(status_code == 404):
+            self.wfile.write(b"HTTP/1.1 404 - Not Found\r\n")
         
         #Write Content-Length
         content = bytes(str(len(body)),encoding="utf-8")
-        self.wfile.write(b"Content-Length: " + content)
-        self.wfile.write(b"\r\n")
+        self.wfile.write(b"Content-Length: " + content + b"\r\n")
 
         #Write Content-type
         self.wfile.write(b"Content-Type: " + content_type + b"\r\n")
@@ -245,83 +172,81 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
         self.wfile.write(bytes(body))
 
 
-    """
-    GET-function
-    file_name = which file is requested
-    """
-    def GET(self, file_name):  
+    def GET(self, file_name:str):  
+        """
+        *Returns 1 if file exists and response is written succesfully
+
+        *Returns 0 if file does not exist and bad response is written
+        """
         #If "/messages" is requested, return list/json-file
         if(file_name == "/messages"):
-            file = open("messages.json", "rb")
-            body = file.read()
-            content_length = len(body)
+            file = open("messages.json", "rb")                              #Open file
+            body = file.read()                                              #Read file
+            content_length = len(body)                                      #Fetch length of file
+            self.WriteHeader(200, content_length, b"text.json", body)       #Write status line, headers and body
+            return 1                                                        #Return successful
 
-            #Write status line, headers and body
-            self.WriteHeader(200, content_length, b"text.json", body)
-            return 1
-
-        #Else, requested file DOES exists
+        #Requested file DOES exist
         elif(self.DoesFileExist(file_name) == True):
 
             #If user is allowed to access given file
             if(file_name != "server.py"): 
-                #If content is empty, return index.html
                 if(file_name == "/"):
-                    #Open and read file
-                    file = open("index.html", "rb")
-                    body = file.read()
-
-                    #Write header
-                    self.WriteHeader(200, len(body), b"text/html", body)
-
-                    #Close file
-                    file.close()
-                    return 1
+                    file = open("index.html", "rb")                         #Open file
+                    body = file.read()                                      #Read file
+                    self.WriteHeader(200, len(body), b"text/html", body)    #Write status line, headers and body
+                    file.close()                                            #Close file
+                    return 1                                                #Return successful
                 
                 else:
-                    #Open and read file
-                    file = open(file_name, "rb")
-                    body = file.read()
-
-                    #Write header
-                    self.WriteHeader(200, str(len(body)), "text/html", body)        #Which file_type is it????????
-
-                    #Close file
-                    file.close()
-
-                    return 1
+                    file = open(file_name, "rb")                            #Open file 
+                    body = file.read()                                      #Read file
+                    self.WriteHeader(200, str(len(body)), "text/html", body)#Write status line, headers and body
+                    file.close()                                            #Close file
+                    return 1                                                #Return successful
             
             #If user is NOT allowed to open file
-            else:       #This line can be written better. NOT just checking for server.py....
-                self.wfile.write(b"HTTP/1.1 403 - Forbidden")
-                return 0
+            else:
+                self.WriteHeader(403, 0, b"", b"")                          #Write status line, headers and body
+                return 0                                                    #Return not successful
 
         #File does NOT exist
         elif(self.DoesFileExist(file_name) == False):
-            self.wfile.write(b"HTTP/1.1 404 - Not Found")
-            return 0
+            self.WriteHeader(404, 0, b"", b"")                              #Write status line, headers and body
+            return 0                                                        #Return not successful
         
-        # A GET request to a resource that does not exist should return a 404 - Not Found status with an optional HTML body.
-        # A GET request to a forbidden resource such as server.py should return a 403 - Forbidden status with an optional HTML body.
-        # Any successful GET request should return a 200 - Ok response code and the requested resource.
-        # Any request or response with a non-empty body MUST contain the 'Content-Length' header. This field is simply the exact size of the body in bytes.
 
+    def POST(self, file_name:str, body:bytes, body_length:int, content_type:bytes):
+        """
+        Creates a new file with the given "file_name".
 
-    """
-    Creates a new file with the given "file_name".
-    Appends the "content" to the new file
-    """
-    def POST(self, file_name):
+        Appends "body" to the new file
+        """
+
+        print("\nPOST FUNCTION!!!!!")
+        print("File_name:", file_name)
+        print("body:", body)
+        print("body_length:", body_length)
+        print("Content_type:", content_type)
+
+        #A POST request to any other file should return "403 - forbidden"
+        # if(file_name != "/test.txt"):
+            # self.wfile.write(b"HTTP/1.1 403 - Forbidden")
+        
         #If file already exists
         if(self.DoesFileExist(file_name) == True):
+            print("ERROR: Can not POST new file. File-name already exists...\n")
             self.wfile.write(b"HTTP/1.1 406 - Not Acceptable")
+        
         
         #File does not exist, create new one
         elif(self.DoesFileExist(file_name) == False):
-            new_file = open(file_name, "a")
-            #Write content to new file
-            new_file.close()
-            self.wfile.write(b"HTTP/1.1 201 - Created")
+            print("CREATING NEW FILE")
+            new_file = open(file_name, "a")             #Create new file
+            # new_file.write(body)                        #Write body to new file
+            new_file.close()                            #Close file
+            # self.WriteHeader(201, body_length, content_type, body)
+            self.wfile.write(b"HTTP/1.1 201 - Created") #Write response
 
         # A POST request to /test.txt should create the resource if it does not exist. The content of the request body should be appended to the file, and its complete contents should be returned in the response body.
         # A POST request to any other file should return a 403 - Forbidden with an optional HTML body.
