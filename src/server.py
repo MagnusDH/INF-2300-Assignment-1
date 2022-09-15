@@ -57,7 +57,8 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
             request_content = self.GET(request_dict["file-name"])
         elif(request_dict["method"]) == "post":
             request_content = self.POST(request_dict["file-name"], request_dict["body"].encode("utf-8"), request_dict["content-length"], request_dict["content-type"].encode("utf-8"))
-
+        elif(request_dict["method"] == "put"):
+            request_content = self.PUT(request_dict["file-name"], request_dict["body"].encode("utf-8"), request_dict["content-length"], request_dict["content-type"])
 
     def read_request(self):
         """
@@ -239,20 +240,16 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
         
         #File does not exist, create new one
         elif(self.DoesFileExist(file_name) == False):
-            if(file_name == "test.json"):
-                new_file = open(file_name, "w")            #Create new file
-                data = []
-                new_record = {"id": 1, "text": body.decode()}
-                data.append(new_record)
-
-                json.dump(data, new_file)
-                    
-                self.WriteHeader(201, len(new_record), b"", b"")
-
-                # new_file.write(new_record)                  #Write body to new file
+            if(".json" in file_name):   #file is ".json"
+                new_file = open(file_name, "w")             #Create new file
+                content = {"id": 1, "text": body.decode()}
+                json_list = []
+                json_list.append(content)
+                json.dump(json_list, new_file)
+                self.WriteHeader(201, len(json_list), b"list", b"")
                 new_file.close()                            #Close file
-            else:
-                print("YEAHHHHHH")
+
+            else:   #File is not ".json"
                 new_file = open(file_name, "wb")            #Create new file
                 new_file.write(body)                        #Write body to new file
                 new_file.close()                            #Close file
@@ -265,6 +262,15 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
         # A POST request to /test.txt should create the resource if it does not exist. The content of the request body should be appended to the file, and its complete contents should be returned in the response body.
         # A POST request to any other file should return a 403 - Forbidden with an optional HTML body.
         # Any request or response with a non-empty body MUST contain the 'Content-Length' header. This field is simply the exact size of the body in bytes.
+
+    def PUT(self, file_name:str, body:bytes, body_length:int, content_type:bytes):
+        pass
+        #Open file_name
+        #load the content of file_name into a list/array
+        #Search for "id" and the number stored there
+        #create new dictionary with "id" and "text"
+        #Append new dictionary to list with "id+1"
+        #Write dictionary or list? back to file_name
 
 
 

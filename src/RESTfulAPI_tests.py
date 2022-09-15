@@ -46,7 +46,7 @@ def test_POST_to_new_file():
     Checks if POST to "test.json" is correct
     """
     #Write request message
-    file_name = "test.json"
+    file_name = "vetle.json"
     content = b"Vetle e FETTE kul"
     headers = {
         "content-type": "json",
@@ -77,7 +77,7 @@ def test_POST_to_messages():
     Checks if POST to "/messages" is correct
     """
     #Write request message
-    file_name = "test.json"
+    file_name = "messages.json"
     content = b"Magnus e sykt kul"
     headers = {
         "content-type": "json",
@@ -102,6 +102,31 @@ def test_POST_to_messages():
         client.close()
         return 0
 
+def test_PUT_to_messages():
+     """
+    Checks if PUT to "/messages" is correct
+    """
+    #Write request message
+    file_name = "messages.json"
+    content = b"This is another message"
+    headers = {
+        "content-type": "json",
+        "content-length": len(content)
+    }
+
+    #Send request
+    client.request("PUT", file_name, body=content, headers=headers)
+
+    #Check response
+    response = client.getresponse().read()
+
+    if(response == content):
+        client.close()
+        return 1
+    else:
+        client.close()
+        return 0
+
 
 
 
@@ -109,8 +134,8 @@ def test_POST_to_messages():
     
 test_functions = [
     # test_GET_messages,
-    test_POST_to_new_file,
-    # test_POST_to_messages,
+    # test_POST_to_new_file,
+    test_POST_to_messages,
 ]
 
 
