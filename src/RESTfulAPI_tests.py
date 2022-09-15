@@ -41,15 +41,15 @@ def test_GET_messages():
         client.close()
         return False
 
-def test_POST_to_messages():
+def test_POST_to_new_file():
     """
-    Checks if POST to "/messages" is correct
+    Checks if POST to "test.json" is correct
     """
     #Write request message
-    file_name = "magnus.json"
-    content = "Magnus e sykt kul"
+    file_name = "test.json"
+    content = b"Vetle e FETTE kul"
     headers = {
-        "content-type": "text.json",
+        "content-type": "json",
         "content-length": len(content)
     }
 
@@ -57,12 +57,43 @@ def test_POST_to_messages():
     if(os.path.exists(file_name) == True):
         os.remove(file_name)
 
+    #Send request
     client.request("POST", file_name, body=content, headers=headers)
-    print("Expected response:", content)
 
     #Check response
     response = client.getresponse().read()
-    print("Actual response:", response)
+
+    if(response == content):
+        client.close()
+        os.remove(file_name)
+        return 1
+    else:
+        client.close()
+        os.remove(file_name)
+        return 0
+
+def test_POST_to_messages():
+    """
+    Checks if POST to "/messages" is correct
+    """
+    #Write request message
+    file_name = "test.json"
+    content = b"Magnus e sykt kul"
+    headers = {
+        "content-type": "json",
+        "content-length": len(content)
+    }
+
+    #Remove test file if it exists
+    if(os.path.exists(file_name) == True):
+        print("FILE ALREADY EXISTS; DELETING IT")
+        os.remove(file_name)
+
+    #Send request
+    client.request("POST", file_name, body=content, headers=headers)
+
+    #Check response
+    response = client.getresponse().read()
 
     if(response == content):
         client.close()
@@ -72,10 +103,14 @@ def test_POST_to_messages():
         return 0
 
 
+
+
+
     
 test_functions = [
     # test_GET_messages,
-    test_POST_to_messages
+    test_POST_to_new_file,
+    # test_POST_to_messages,
 ]
 
 

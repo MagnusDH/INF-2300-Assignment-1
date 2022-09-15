@@ -4,6 +4,7 @@ import re
 import socketserver
 from urllib import request, response
 import os
+import json
 
 """
 Written by: Raymon Skjørten Hansen
@@ -90,6 +91,7 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
                 met_code_ver = string_line.split(" ")
                 request_dict["method"] = "post"             #Method
                 request_dict["file-name"] = met_code_ver[1] #FilePathName
+                request_dict["file-name"] = request_dict["file-name"].replace("/", "")
                 request_dict["version"] = met_code_ver[2]   #version
 
             #Check status-line
@@ -116,6 +118,7 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
             #Check content-type
             if(string_line.startswith("content-type:")):                
                 content_type = string_line[14:]
+                content_type = content_type[:-2]
                 request_dict["content-type"] = content_type
 
 
@@ -171,6 +174,7 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
 
         #Write entity body
         self.wfile.write(body)
+
 
     def GET(self, file_name:str):  
         """
@@ -235,16 +239,28 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
         
         #File does not exist, create new one
         elif(self.DoesFileExist(file_name) == False):
-            new_file = open(file_name, "ab")            #Create new file
-            new_file.write(body)                        #Write body to new file
-            new_file.close()                            #Close file
+            if(file_name == "test.json"):
+                new_file = open(file_name, "w")            #Create new file
+                data = []
+                new_record = {"id": 1, "text": body.decode()}
+                data.append(new_record)
 
-            #ReOpen file to write correct response body
-            file = open(file_name, "rb")
-            response_body = file.read()
-            # print("RESPONSE BODY:\n", response_body)
+                json.dump(data, new_file)
+                    
+                self.WriteHeader(201, len(new_record), b"", b"")
 
-            self.WriteHeader(201, len(response_body), content_type, response_body)
+                # new_file.write(new_record)                  #Write body to new file
+                new_file.close()                            #Close file
+            else:
+                print("YEAHHHHHH")
+                new_file = open(file_name, "wb")            #Create new file
+                new_file.write(body)                        #Write body to new file
+                new_file.close()                            #Close file
+                #ReOpen file to write correct response body
+                file = open(file_name, "rb")
+                response_body = file.read()
+
+                self.WriteHeader(201, len(response_body), content_type, response_body)
 
         # A POST request to /test.txt should create the resource if it does not exist. The content of the request body should be appended to the file, and its complete contents should be returned in the response body.
         # A POST request to any other file should return a 403 - Forbidden with an optional HTML body.
@@ -262,6 +278,7 @@ if __name__ == "__main__":
 
 
 
+            # data = json.load(file_name)
 
 
 
