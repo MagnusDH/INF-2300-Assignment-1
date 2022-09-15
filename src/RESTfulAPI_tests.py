@@ -103,7 +103,7 @@ def test_POST_to_messages():
         return 0
 
 def test_PUT_to_messages():
-     """
+    """
     Checks if PUT to "/messages" is correct
     """
     #Write request message
@@ -130,12 +130,11 @@ def test_PUT_to_messages():
 
 
 
-
-    
 test_functions = [
     # test_GET_messages,
     # test_POST_to_new_file,
-    test_POST_to_messages,
+    # test_POST_to_messages,
+    test_PUT_to_messages,
 ]
 
 

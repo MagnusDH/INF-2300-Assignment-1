@@ -2,6 +2,7 @@
 from multiprocessing.sharedctypes import Value
 import re
 import socketserver
+from traceback import print_tb
 from urllib import request, response
 import os
 import json
@@ -58,7 +59,7 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
         elif(request_dict["method"]) == "post":
             request_content = self.POST(request_dict["file-name"], request_dict["body"].encode("utf-8"), request_dict["content-length"], request_dict["content-type"].encode("utf-8"))
         elif(request_dict["method"] == "put"):
-            request_content = self.PUT(request_dict["file-name"], request_dict["body"].encode("utf-8"), request_dict["content-length"], request_dict["content-type"])
+            request_content = self.PUT(request_dict["file-name"], request_dict["body"].encode("utf-8"), request_dict["content-length"], request_dict["content-type"].encode("utf-8"))
 
     def read_request(self):
         """
@@ -126,8 +127,8 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
             #Check blank line
             if(byte_line == b"\r\n"):
 
-                #Read body IF "POST" function is called
-                if(request_dict["method"] == "post"):
+                #Read body IF "POST" or "PUT" function is called
+                if(request_dict["method"] == "post" or request_dict["method"] == "put"):
                     body = self.rfile.read(int(request_dict["content-length"])).decode()
                     request_dict["body"] = body
 
@@ -264,18 +265,69 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
         # Any request or response with a non-empty body MUST contain the 'Content-Length' header. This field is simply the exact size of the body in bytes.
 
     def PUT(self, file_name:str, body:bytes, body_length:int, content_type:bytes):
-        pass
-        #Open file_name
-        #load the content of file_name into a list/array
-        #Search for "id" and the number stored there
-        #create new dictionary with "id" and "text"
-        #Append new dictionary to list with "id+1"
-        #Write dictionary or list? back to file_name
+        """
+        Appends body to file_name
+        """
+        #If file exists
+        if(self.DoesFileExist(file_name) == True):
+            #Open file_name in "append" mode
+            with open(file_name) as file:
+                data = json.load(file)          #Load content of file_name into data
+
+                #Fetch which message id to replace
+                id_input = input("Enter message ID to replace: ")
+                
+                #Search for ID in content of file_name
+                for dict in data:
+                    if(dict["id"] == int(id_input)):
+                        print("YAYYYYYYY")
+                        break
+                    elif(int(id_input) > len(dict)):
+                        print("ERROR: No such ID in file")
+                        break
+                    # else:
+                        # print("ERROR: Bad input")
+
+
+
+                # Search for given "id" to replace
+                
+                # for i in data:
+                    # print(data[i]["id"])
+                #     if(data[i]["id"] == int(id_input)-1):
+                #         print("YAYYYYYY\n")
+
+                self.WriteHeader(200, 0, b"", b"")
+        #File does not exist
+        else:
+            print("ERROR, PUT.... file does not exist")
+            self.WriteHeader(404, 0, b"", b"")
+
+
+
+        #         # id = 0
+        #             # if(data[i]["id"] == True):
+        #                 # id += 1
+        #         #Content to be added
+        #         content = {"id": len(data)+1, "text": body.decode()}
+
+        #         data.append(content)
+
+        #         file2 = open(file_name, "w")
+        #         json.dump(content, file)
+        #         file2.close()
+
+        #         # data[i]["text"] = body.decode()
+        #     #Search for "id" and the number stored there
+        #     #create new dictionary with "id" and "text"
+        #     #Append new dictionary to list with "id+1"
+        #     #Write dictionary or list? back to file_name
+       
 
 
 
 if __name__ == "__main__":
-    HOST, PORT = "localhost", 8080
+    HOST, PORT = "localhost", 8080  #0.0.0.0, 80
     socketserver.TCPServer.allow_reuse_address = True
     with socketserver.TCPServer((HOST, PORT), MyTCPHandler) as server:
         print("Serving at: http://{}:{}".format(HOST, PORT))
