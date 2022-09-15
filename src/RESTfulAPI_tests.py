@@ -41,44 +41,13 @@ def test_GET_messages():
         client.close()
         return False
 
-def test_POST_to_new_file():
-    """
-    Checks if POST to "test.json" is correct
-    """
-    #Write request message
-    file_name = "vetle.json"
-    content = b"Vetle e FETTE kul"
-    headers = {
-        "content-type": "json",
-        "content-length": len(content)
-    }
-
-    #Remove test file if it exists
-    if(os.path.exists(file_name) == True):
-        os.remove(file_name)
-
-    #Send request
-    client.request("POST", file_name, body=content, headers=headers)
-
-    #Check response
-    response = client.getresponse().read()
-
-    if(response == content):
-        client.close()
-        os.remove(file_name)
-        return 1
-    else:
-        client.close()
-        os.remove(file_name)
-        return 0
-
 def test_POST_to_messages():
     """
     Checks if POST to "/messages" is correct
     """
     #Write request message
     file_name = "messages.json"
-    content = b"Magnus e sykt kul"
+    content = b"Vetle, du e sykt kul"
     headers = {
         "content-type": "json",
         "content-length": len(content)
@@ -104,11 +73,11 @@ def test_POST_to_messages():
 
 def test_PUT_to_messages():
     """
-    Checks if PUT to "/messages" is correct
+    Checks if PUT to "/messages" writes text to "messages.json"
     """
     #Write request message
     file_name = "messages.json"
-    content = b"This is another message"
+    content = b"This message replaced another message"
     headers = {
         "content-type": "json",
         "content-length": len(content)
@@ -127,14 +96,30 @@ def test_PUT_to_messages():
         client.close()
         return 0
 
+def test_DELETE_to_messages():
+    """
+    Checks if DELETE to "/messages" is correct
+    """
+    #Write request message
+    file_name = "messages.json"
+    headers = {
+        "content-type": "json",
+    }
 
+    #Send request
+    client.request("DELETE", file_name, headers=headers)
+
+    #Check response
+    response = client.getresponse().read()
+
+    return 1
 
 
 test_functions = [
-    # test_GET_messages,
-    # test_POST_to_new_file,
-    # test_POST_to_messages,
-    test_PUT_to_messages,
+    # test_GET_messages,        #GOOD
+    test_POST_to_messages,    #GOOD
+    # test_PUT_to_messages,
+    # test_DELETE_to_messages
 ]
 
 
