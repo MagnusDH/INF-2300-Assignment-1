@@ -32,6 +32,7 @@ def test_GET_messages():
     
     #Read the actual response from server
     response = client.getresponse().read()
+    print(response.decode())
 
     #Check responses
     if(expected_response == response):
@@ -114,12 +115,80 @@ def test_DELETE_to_messages():
 
     return 1
 
+def test_program():
+    print("To exit program, type: 'quit'\n")
+    while True:
+        input_method = input("Enter method: ")
+        input_method = input_method.lower()
+        
+        if(input_method == "get"):                          #WORKS
+            input_filename = input("Enter filename: ")
+            client.request(input_method, input_filename)
+            response = client.getresponse().read()
+            print(response.decode())
+            
+        
+        if(input_method == "post"):                         #WORKS
+            input_filename = input("Enter filename: ")
+            input_text = input("Enter text to add: ")
+            headers = {
+                "content-type": "json",
+                "content-length": len(input_text)
+            }
+            client.request(input_method, input_filename, body=input_text, headers=headers)
+            
+        
+        if(input_method == "put"):                          
+            input_filename = input("Enter filename: ")
+            if(os.path.exists(input_filename) == False):
+                print("ERROR: File does not exist...\n")
+                break
+            input_text = input("Enter text to replace: ")
+
+            headers = {
+                "content-type": "json",
+                "content-length": len(input_text)
+            }
+
+            client.request(input_method, input_filename, body=input_text, headers=headers)
+            
+        
+        if(input_method == "delete"):
+            input_filename = input("Enter filename: ")
+            if(os.path.exists(input_filename) == False):
+                print("ERROR: File does not exist...\n")
+                break            
+            else:
+                headers = {
+                    "content-type": "json",
+                }
+            
+                client.request(input_method, input_filename, headers=headers)
+
+
+
+
+
+
+
+            # input_contentType = input("Enter content type: ")
+
+
+        if(input_method == "quit"):
+            break
+
+
+    return 1
+
+    #POST messages.json "blablabla" {"text": "blablabla"} "Content-type": "json"
+
 
 test_functions = [
-    # test_GET_messages,        #GOOD
-    test_POST_to_messages,    #GOOD
+    test_GET_messages,        #GOOD
+    # test_POST_to_messages,    #GOOD
     # test_PUT_to_messages,
-    # test_DELETE_to_messages
+    # test_DELETE_to_messages,
+    # test_program
 ]
 
 
@@ -143,5 +212,6 @@ def run_tests(all_tests, random=False):
     print("PASSED", passed, "/", num_tests, "TESTS", "(", percent, "%)")
 
 
-run_tests(test_functions)
+# run_tests(test_functions)
+test_program()
 server.shutdown()

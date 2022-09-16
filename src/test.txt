@@ -1,1 +1,1 @@
-Simple test
+text=Simple test

@@ -187,12 +187,18 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
         *Returns 0 if file does not exist and bad response is written
         """
         #If "/messages" is requested, return list/json-file
-        if(file_name == "/messages"):
-            file = open("messages.json", "rb")                              #Open file
-            body = file.read()                                              #Read file
-            content_length = len(body)                                      #Fetch length of file
-            self.WriteHeader(200, content_length, b"text.json", body)       #Write status line, headers and body
-            return 1                                                        #Return successful
+        if(file_name == "/messages" or file_name == "messages.json"):
+            if(self.DoesFileExist(file_name) == False):
+                file = open("messages.json", "rb")                              #Open file
+                body = file.read()                                              #Read file
+                content_length = len(body)                                      #Fetch length of file
+                self.WriteHeader(200, content_length, b"text.json", body)       #Write status line, headers and body
+                return 1                                                        #Return successful
+                
+            else:
+                print("ERROR: File does not exist...")
+                self.WriteHeader(404, 0, b"", b"")                              #Write status line, headers and body
+                return 0
 
         #Requested file DOES exist
         elif(self.DoesFileExist(file_name) == True):
@@ -229,12 +235,33 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
         Creates a new file with the given "file_name", IF another file does not already exist\n
         Writes headers and appends "body" to the new created file
         """
-        
         #If file already exists
         if(self.DoesFileExist(file_name) == True):
-            print("ERROR: Can not POST new file. File-name already exists...\n")
-            self.WriteHeader(406, 0, b"", b"")
-        
+            #If file is of type ".json"
+            if(".json" in file_name):
+                #Open file_name
+                with open(file_name) as file:
+                    list_data = json.load(file)                                     #Load content of file_name into data
+                    #If there is no content in given file
+                    if(len(list_data) == 0):
+                        content = {"id": 1, "text": body.decode("utf-8")}           #Create content to be written to file
+                        list_data.append(content)                                   #Append content to list_data
+
+                    #If there is content in given file
+                    else:
+                        content = {"id": len(list_data)+1, "text": body.decode("utf-8")}
+                        list_data.append(content)                                   #Append content to list_data
+
+                #Close file
+                file.close()
+
+                #Open file_name in "write" mode and replace list_data
+                with open(file_name, "w") as file:
+                    json.dump(list_data, file)
+                    file.close()
+                    self.WriteHeader(200, 0, b"", b"")
+
+
         
         #File does not exist, create new one...
         elif(self.DoesFileExist(file_name) == False):
@@ -260,7 +287,7 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
                 self.WriteHeader(201, len(response_body), content_type, response_body)  #Write response header
 
 
-    def PUT(self, file_name:str, body:bytes, body_length:int, content_type:bytes):
+    def PUT(self, file_name:str, body:bytes, body_length:int, content_type:bytes):        
         """
         Replaces a message in a ".json" file based on an id
         """
@@ -270,7 +297,6 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
             with open(file_name) as file:
                 list_data = json.load(file)                                     #Load content of file_name into data
 
-                print("LIST_DATA:", list_data)
                 #If there is no content in given file
                 if(len(list_data) == 0):
                     content = {"id": 1, "text": body.decode("utf-8")}           #Create content to be written to file
@@ -278,7 +304,7 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
 
                 #If there is content in given file
                 else:
-                    id_input = input("Enter message (integer)ID to replace: ")  #Fetch which message id to replace
+                    id_input = input("Enter ID to replace: ")                   #Fetch which message id to replace
                 
                     #Search for ID in content of file_name
                     for i in range(len(list_data)):
@@ -311,7 +337,7 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
             #Open file
             with open(file_name) as file:
                 list_data = json.load(file)                                     #Load content of file into list
-                id_input = input("Enter which message (integer)ID to delete: ") #Fetch which message ID to delete
+                id_input = input("Enter ID to delete: ") #Fetch which message ID to delete
 
                 #Search for ID in data from file
                 for i in range(len(list_data)):
