@@ -157,6 +157,8 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
             self.wfile.write(b"HTTP/1.1 200 - OK\r\n")
         if(status_code == 201):
             self.wfile.write(b"HTTP/1.1 201 - Created\r\n")
+        if(status_code == 304):
+            self.wfile.write(b"HTTP/1.1 304 - Not Modified\r\n")
         if(status_code == 403):
             self.wfile.write(b"HTTP/1.1 403 - Forbidden\r\n")
         if(status_code == 404):
@@ -256,7 +258,7 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
                 file.close()
 
                 #Open file_name in "write" mode and replace list_data
-                with open(file_name, "w") as file:
+                with open(file_name, "a") as file:
                     json.dump(list_data, file)
                     file.close()
                     self.WriteHeader(200, 0, b"", b"")
@@ -292,15 +294,15 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
         Replaces a message in a ".json" file based on an id
         """
         #If file exists
-        if(self.DoesFileExist(file_name) == True):
+        if(self.DoesFileExist(file_name) == False):
             #Open file_name
             with open(file_name) as file:
                 list_data = json.load(file)                                     #Load content of file_name into data
 
                 #If there is no content in given file
                 if(len(list_data) == 0):
-                    content = {"id": 1, "text": body.decode("utf-8")}           #Create content to be written to file
-                    list_data.append(content)                                   #Append content to list_data
+                    print("ERROR: Can not replace text in file. The file is empty")
+                    self.WriteHeader(304, 0, b"", b"")
 
                 #If there is content in given file
                 else:
@@ -334,10 +336,10 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
 
         #If file exists
         if(self.DoesFileExist(file_name) == True):
+            id_input = input("Enter ID to delete: ") #Fetch which message ID to delete
             #Open file
             with open(file_name) as file:
                 list_data = json.load(file)                                     #Load content of file into list
-                id_input = input("Enter ID to delete: ") #Fetch which message ID to delete
 
                 #Search for ID in data from file
                 for i in range(len(list_data)):

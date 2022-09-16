@@ -180,15 +180,12 @@ def test_program():
 
     return 1
 
-    #POST messages.json "blablabla" {"text": "blablabla"} "Content-type": "json"
-
-
 test_functions = [
-    test_GET_messages,        #GOOD
-    # test_POST_to_messages,    #GOOD
-    # test_PUT_to_messages,
-    # test_DELETE_to_messages,
-    # test_program
+    # test_GET_messages,          #OK
+    # test_POST_to_messages,    #OK
+    # test_PUT_to_messages,     #OK
+    # test_DELETE_to_messages,  #OK
+    test_program
 ]
 
 
